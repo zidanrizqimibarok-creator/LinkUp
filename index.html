@@ -1,0 +1,250 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>LinkUp v12 | Conecta Acquisition</title>
+    <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
+    <style>
+        :root { --p: #5856D6; --bg: #F2F2F7; --r: #FF3B30; --g: #4CD964; --w: #FFFFFF; }
+        * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; -webkit-tap-highlight-color: transparent; }
+        body { background: #000; display: flex; justify-content: center; height: 100vh; overflow: hidden; }
+        .shell { width: 100%; max-width: 430px; height: 100vh; background: var(--bg); position: relative; display: flex; flex-direction: column; }
+        
+        /* TRANSITION BOOTING */
+        #boot { position: fixed; inset: 0; background: #fff; z-index: 50000; display: flex; flex-direction: column; align-items: center; justify-content: center; }
+        .b-text { font-size: 45px; font-weight: 900; letter-spacing: -2px; transition: 1s; }
+        .b-sub { font-size: 12px; font-weight: 700; color: #888; margin-top: 10px; opacity: 0; transition: 1s; }
+        
+        /* UI CORE */
+        header { padding: 60px 25px 15px; background: rgba(255,255,255,0.8); backdrop-filter: blur(20px); display: flex; justify-content: space-between; align-items: center; border-bottom: 0.5px solid #ddd; z-index: 100; }
+        .nav-b { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: center; z-index: 900; }
+        nav { width: 90%; background: #fff; border-radius: 35px; padding: 15px; display: flex; justify-content: space-around; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
+        .n-i { font-size: 24px; cursor: pointer; opacity: 0.3; transition: 0.3s; }
+        .n-i.active { opacity: 1; color: var(--p); transform: translateY(-5px); }
+
+        .main { flex: 1; overflow-y: auto; padding: 15px 20px 120px; }
+        .page { display: none; animation: up 0.3s ease; }
+        .page.active { display: block; }
+        @keyframes up { from { opacity:0; transform:translateY(10px); } to { opacity:1; transform:0; } }
+
+        .card { background: #fff; border-radius: 22px; padding: 16px; display: flex; align-items: center; gap: 15px; margin-bottom: 12px; cursor: pointer; }
+        .av { width: 55px; height: 55px; border-radius: 50%; object-fit: cover; background: #eee; }
+
+        /* VIEW & CHAT */
+        .view { position: fixed; inset: 0; background: var(--bg); z-index: 2000; transform: translateX(100%); transition: 0.4s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
+        .view.open { transform: translateX(0); }
+        .msg-area { flex: 1; padding: 20px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .bubble { padding: 12px 16px; border-radius: 20px; max-width: 80%; font-size: 15px; position: relative; }
+        .b-me { align-self: flex-end; background: var(--p); color: #fff; border-bottom-right-radius: 2px; }
+        .b-them { align-self: flex-start; background: #fff; border-bottom-left-radius: 2px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .rep-v { font-size: 11px; background: rgba(0,0,0,0.1); padding: 5px 10px; border-radius: 10px; margin-bottom: 5px; border-left: 3px solid var(--p); }
+
+        /* PROFILE GRID */
+        .av-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; margin: 15px 0; max-height: 180px; overflow-y: auto; }
+        .av-opt { width: 100%; border-radius: 50%; border: 3px solid transparent; }
+        .av-opt.active { border-color: var(--p); }
+
+        #call-ui { position: fixed; inset: 0; background: #1c1c1e; z-index: 5000; display: none; flex-direction: column; align-items: center; justify-content: space-around; color: #fff; }
+    </style>
+</head>
+<body>
+
+    <div id="boot">
+        <h1 id="b-logo" class="b-text" style="color:var(--p)">LinkUp</h1>
+        <p id="b-sub" class="b-sub">ACQUIRED BY CONECTA</p>
+    </div>
+
+    <div class="shell">
+        <header>
+            <h1 id="h-t">Chats</h1>
+            <img id="my-av" onclick="openProfile()" class="av" style="cursor:pointer; border:2px solid var(--p)">
+        </header>
+
+        <div class="main">
+            <div id="p-chats" class="page active"><div id="chat-l"></div></div>
+            <div id="p-contacts" class="page">
+                <input type="text" id="s-id" style="width:100%; padding:15px; border-radius:15px; border:none; margin-bottom:10px;" placeholder="ID Teman...">
+                <button onclick="addFriend()" style="width:100%; background:var(--p); color:#fff; padding:15px; border-radius:15px; border:none; font-weight:800;">Tambah Kontak</button>
+                <div id="cont-l" style="margin-top:20px;"></div>
+            </div>
+            <div id="p-status" class="page"><div class="card"><h4>Status Saya</h4></div></div>
+        </div>
+
+        <div class="nav-b">
+            <nav>
+                <div class="n-i active" onclick="nav('chats','Chats',this)">💬</div>
+                <div class="n-i" onclick="nav('contacts','Kontak',this)">👥</div>
+                <div class="n-i" onclick="nav('status','Status',this)">⭕</div>
+            </nav>
+        </div>
+
+        <div id="v-chat" class="view">
+            <div style="padding:55px 20px 15px; background:#fff; display:flex; align-items:center; gap:10px; border-bottom:1px solid #eee;">
+                <b onclick="closeChat()" style="color:var(--p)">❮</b>
+                <img id="c-av" class="av">
+                <div style="flex:1"><h4 id="c-n"></h4><p style="font-size:10px; color:var(--g)">online</p></div>
+                <span onclick="doCall()">📞</span>
+                <span onclick="blockUser()" style="margin-left:10px;">🚫</span>
+            </div>
+            <div id="m-area" class="msg-area"></div>
+            <div id="rep-ui" style="display:none; padding:10px; background:#eee; border-left:4px solid var(--p);">
+                Membalas: <span id="rep-txt"></span> <b onclick="cancelRep()" style="float:right">×</b>
+            </div>
+            <div style="padding:15px 20px 40px; background:#fff; display:flex; gap:10px; align-items:center; border-top:1px solid #eee;">
+                <input type="text" id="m-in" style="flex:1; padding:12px; border-radius:20px; border:1px solid #eee;" placeholder="Pesan...">
+                <button id="vn-btn" style="border:none; background:none; font-size:22px;">🎤</button>
+                <button onclick="sendMsg()" style="border:none; background:var(--p); color:#fff; width:45px; height:45px; border-radius:50%;">➤</button>
+            </div>
+        </div>
+
+        <div id="v-prof" class="view" style="transform:translateY(100%)">
+            <div style="padding:60px 25px 20px; display:flex; justify-content:space-between; background:#fff;">
+                <h3 onclick="closeProfile()" style="color:var(--p)">Selesai</h3>
+                <h3>Profil</h3>
+                <span></span>
+            </div>
+            <div style="padding:20px; text-align:center;">
+                <img id="p-av-b" class="av" style="width:100px; height:100px; border:3px solid var(--p)">
+                <div id="av-grid" class="av-grid"></div>
+                <div style="background:#fff; padding:20px; border-radius:20px; text-align:left;">
+                    <label style="font-size:11px; font-weight:800; color:#888">NAMA</label>
+                    <input type="text" id="p-name-in" style="width:100%; border:none; border-bottom:1px solid #eee; padding:10px 0; font-size:18px; font-weight:700;">
+                    <p id="p-my-id" onclick="copyID()" style="font-size:14px; font-weight:800; color:var(--p); margin-top:20px; cursor:pointer;"></p>
+                </div>
+            </div>
+        </div>
+
+        <div id="call-ui">
+            <img id="call-av" class="av" style="width:130px; height:130px;">
+            <h2 id="call-n-disp"></h2>
+            <button onclick="location.reload()" style="background:var(--r); color:#fff; padding:20px; border-radius:50%; border:none;">🏁</button>
+        </div>
+    </div>
+
+    <audio id="remote-audio" autoplay></audio>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getDatabase, ref, set, push, onValue, remove } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+
+        const conf = { apiKey: "AIzaSyBoS3INezO0UQptcXYNZFbnPbmmf_hU8xc", databaseURL: "https://xbook-global26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "xbook-global26" };
+        const app = initializeApp(conf); const db = getDatabase(app);
+
+        // --- IDENTITY & BOOTING ---
+        let myId = localStorage.getItem('lu_id_v12') || ("LNK-"+Math.random().toString(36).substr(2,6).toUpperCase());
+        localStorage.setItem('lu_id_v12', myId);
+        let myName = localStorage.getItem('lu_n12') || "User "+myId.split('-')[1];
+        let myAv = localStorage.getItem('lu_a12') || `https://api.dicebear.com/7.x/avataaars/svg?seed=${myId}`;
+        let peer = new Peer(myId), curT = null, repTxt = null, blocked = JSON.parse(localStorage.getItem('lu_bl') || "[]");
+
+        // ANIMASI BOOTING (LINKUP KE CONECTA)
+        setTimeout(() => {
+            const logo = document.getElementById('b-logo');
+            logo.style.color = "#000"; logo.innerText = "Conecta";
+            document.getElementById('b-sub').style.opacity = "1";
+            setTimeout(() => { document.getElementById('boot').style.display='none'; }, 2000);
+        }, 1500);
+
+        // --- CORE FUNCTIONS ---
+        function sync() {
+            set(ref(db, `users/${myId}`), { id: myId, name: myName, avatar: myAv });
+            document.getElementById('my-av').src = myAv;
+            document.getElementById('p-av-b').src = myAv;
+            document.getElementById('p-name-in').value = myName;
+            document.getElementById('p-my-id').innerText = "ID: " + myId;
+            const grid = document.getElementById('av-grid'); grid.innerHTML = "";
+            for(let i=1; i<=20; i++){
+                const url = `https://api.dicebear.com/7.x/avataaars/svg?seed=V12${i*7}`;
+                const img = document.createElement('img'); img.src = url; img.className = `av-opt ${myAv===url?'active':''}`;
+                img.onclick = () => { myAv=url; localStorage.setItem('lu_a12', url); sync(); }; grid.appendChild(img);
+            }
+        }
+        sync();
+
+        onValue(ref(db, `users/${myId}/friends`), (s) => {
+            const cl = document.getElementById('cont-l'), ch = document.getElementById('chat-l');
+            cl.innerHTML = ""; ch.innerHTML = "";
+            s.forEach(c => {
+                onValue(ref(db, `users/${c.val().id}`), (u) => {
+                    const d = u.val(); if(!d || blocked.includes(d.id)) return;
+                    const h = `<div class="card"><img src="${d.avatar}" class="av"><div><h4>${d.name}</h4><p>${d.id}</p></div></div>`;
+                    const div = document.createElement('div'); div.innerHTML = h;
+                    div.onclick = () => openChat(d); cl.appendChild(div);
+                    const div2 = div.cloneNode(true); div2.onclick = () => openChat(d); ch.appendChild(div2);
+                });
+            });
+        });
+
+        window.openChat = (u) => {
+            curT = u; document.getElementById('c-n').innerText = u.name;
+            document.getElementById('c-av').src = u.avatar;
+            document.getElementById('v-chat').classList.add('open');
+            const chan = [myId, u.id].sort().join('_');
+            onValue(ref(db, 'msgs/'+chan), (snap) => {
+                const area = document.getElementById('m-area'); area.innerHTML = "";
+                snap.forEach(m => {
+                    const d = m.val();
+                    const div = document.createElement('div');
+                    div.className = `bubble ${d.s===myId ? 'b-me' : 'b-them'}`;
+                    div.innerHTML = (d.r ? `<div class="rep-v">${d.r}</div>` : '') + (d.type==='vn' ? `<audio controls src="${d.m}"></audio>` : d.m);
+                    div.onclick = () => {
+                        if(confirm("Pilih: \nOK untuk Balas\nCancel untuk Hapus")) {
+                            repTxt = d.m.substring(0,30); document.getElementById('rep-ui').style.display='block';
+                            document.getElementById('rep-txt').innerText = repTxt;
+                        } else if(d.s === myId) {
+                            if(confirm("Hapus pesan ini?")) remove(ref(db, `msgs/${chan}/${m.key}`));
+                        }
+                    };
+                    area.appendChild(div);
+                });
+                area.scrollTop = area.scrollHeight;
+            });
+        };
+
+        window.sendMsg = () => {
+            const val = document.getElementById('m-in').value;
+            if(val && curT) {
+                const chan = [myId, curT.id].sort().join('_');
+                push(ref(db, 'msgs/'+chan), { s:myId, m:val, t:Date.now(), r: repTxt });
+                document.getElementById('m-in').value = ""; cancelRep();
+            }
+        };
+
+        window.doCall = () => {
+            navigator.mediaDevices.getUserMedia({audio:true}).then(s => {
+                document.getElementById('call-ui').style.display='flex';
+                document.getElementById('call-n-disp').innerText=curT.name;
+                document.getElementById('call-av').src=curT.avatar;
+                peer.call(curT.id, s).on('stream', rs => document.getElementById('remote-audio').srcObject=rs);
+            });
+        };
+
+        window.blockUser = () => {
+            if(confirm("Blokir user ini?")) { blocked.push(curT.id); localStorage.setItem('lu_bl', JSON.stringify(blocked)); location.reload(); }
+        };
+
+        let rec, chunks = [];
+        document.getElementById('vn-btn').onmousedown = async () => {
+            const s = await navigator.mediaDevices.getUserMedia({ audio: true });
+            rec = new MediaRecorder(s); rec.ondataavailable = e => chunks.push(e.data);
+            rec.onstop = () => {
+                const r = new FileReader(); r.readAsDataURL(new Blob(chunks, {type:'audio/ogg'}));
+                r.onloadend = () => push(ref(db, 'msgs/'+[myId, curT.id].sort().join('_')), { s:myId, m:r.result, type:'vn', t:Date.now() });
+                chunks = [];
+            }; rec.start(); document.getElementById('vn-btn').style.color = 'red';
+        };
+        document.getElementById('vn-btn').onmouseup = () => { if(rec) rec.stop(); document.getElementById('vn-btn').style.color = 'black'; };
+
+        peer.on('call', c => { if(confirm("Ada telpon, terima?")) { navigator.mediaDevices.getUserMedia({audio:true}).then(s => { document.getElementById('call-ui').style.display='flex'; c.answer(s); c.on('stream', rs => document.getElementById('remote-audio').srcObject=rs); }); } });
+
+        window.nav = (id, t, el) => { document.querySelectorAll('.page').forEach(p => p.classList.remove('active')); document.getElementById('p-'+id).classList.add('active'); document.getElementById('h-t').innerText = t; document.querySelectorAll('.n-i').forEach(n => n.classList.remove('active')); el.classList.add('active'); };
+        window.addFriend = () => { const tid = document.getElementById('s-id').value.toUpperCase().trim(); if(tid && tid !== myId) set(ref(db, `users/${myId}/friends/${tid}`), { id: tid }); document.getElementById('s-id').value = ""; };
+        window.cancelRep = () => { repTxt = null; document.getElementById('rep-ui').style.display='none'; };
+        window.closeChat = () => document.getElementById('v-chat').classList.remove('open');
+        window.openProfile = () => document.getElementById('v-prof').style.transform = 'translateY(0)';
+        window.closeProfile = () => { myName = document.getElementById('p-name-in').value; localStorage.setItem('lu_n12', myName); sync(); document.getElementById('v-prof').style.transform = 'translateY(100%)'; };
+        window.copyID = () => { navigator.clipboard.writeText(myId); alert("ID Disalin!"); };
+    </script>
+</body>
+</html>
