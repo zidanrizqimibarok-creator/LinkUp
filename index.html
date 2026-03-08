@@ -3,211 +3,252 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>LinkUp v20 | Conecta Elite</title>
+    <title>LinkUp v22 | The Absolute</title>
     <script src="https://unpkg.com/peerjs@1.5.2/dist/peerjs.min.js"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
-        :root { --p: #5856D6; --glass: rgba(255, 255, 255, 0.08); --blur: blur(40px); --r: #FF3B30; --g: #4CD964; --y: #FFCC00; }
+        :root { --p: #5856D6; --glass: rgba(255, 255, 255, 0.08); --blur: blur(40px); --r: #FF3B30; --g: #4CD964; }
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; color: #fff; }
         body { background: #000; height: 100dvh; overflow: hidden; display: flex; justify-content: center; }
         
-        /* RESPONSIVE SHELL */
-        .shell { width: 100%; max-width: 430px; height: 100%; position: relative; display: flex; flex-direction: column; background: radial-gradient(circle at top right, #1c1c1e, #000); }
-        @media (min-width: 800px) { .shell { max-width: 90%; height: 95vh; margin-top: 2.5vh; border-radius: 30px; border: 1px solid rgba(255,255,255,0.1); } }
+        .shell { width: 100%; max-width: 430px; height: 100%; position: relative; display: flex; flex-direction: column; background: #000; border-left: 0.5px solid #333; border-right: 0.5px solid #333; }
+        @media (min-width: 900px) { .shell { max-width: 90%; height: 95vh; margin-top: 2.5vh; border-radius: 30px; } }
 
-        /* HEADER */
-        header { padding: 55px 25px 15px; background: rgba(0,0,0,0.5); backdrop-filter: var(--blur); display: flex; justify-content: space-between; align-items: center; z-index: 100; border-bottom: 0.5px solid rgba(255,255,255,0.1); }
+        header { padding: 55px 25px 15px; background: rgba(0,0,0,0.8); backdrop-filter: var(--blur); display: flex; justify-content: space-between; align-items: center; z-index: 1000; }
+        
+        /* STORY */
+        .story-bar { display: flex; gap: 15px; padding: 15px 20px; overflow-x: auto; scrollbar-width: none; background: rgba(255,255,255,0.03); flex-shrink: 0; border-bottom: 0.5px solid #1a1a1a; }
+        .s-ring { width: 65px; height: 65px; border-radius: 50%; border: 2.5px solid var(--p); padding: 3px; flex-shrink: 0; cursor: pointer; }
 
-        /* CHAT LIST & CARDS */
-        .main { flex: 1; overflow-y: auto; padding: 15px 20px 140px; }
-        .card { background: var(--glass); backdrop-filter: var(--blur); border-radius: 24px; padding: 18px; display: flex; align-items: center; gap: 15px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1); transition: 0.3s; }
-        .card:active { transform: scale(0.97); }
+        .main { flex: 1; overflow-y: auto; padding: 10px 20px 150px; }
+        .card { background: var(--glass); border-radius: 22px; padding: 18px; display: flex; align-items: center; gap: 15px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.1); cursor: pointer; }
         .av { width: 55px; height: 55px; border-radius: 50%; border: 2px solid var(--p); background: #111; display: flex; align-items: center; justify-content: center; overflow: hidden; font-size: 24px; }
         .av img { width: 100%; height: 100%; object-fit: cover; }
 
-        /* BUBBLE CHAT */
-        .bubble { padding: 10px 15px; border-radius: 18px; max-width: 75%; position: relative; font-size: 15px; margin-bottom: 2px; }
+        /* VIEWS */
+        .view { position: fixed; inset: 0; background: #000; z-index: 5000; transform: translateX(100%); transition: 0.3s cubic-bezier(0.4, 0, 0.2, 1); display: flex; flex-direction: column; }
+        .view.open { transform: translateX(0); }
+        .view.up { transform: translateY(100%); transition: 0.4s; }
+        .view.up.open { transform: translateY(0); }
+
+        /* CHAT BUBBLE */
+        .m-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 8px; }
+        .bubble { padding: 12px 16px; border-radius: 20px; max-width: 75%; font-size: 15px; position: relative; }
         .b-me { align-self: flex-end; background: var(--p); border-bottom-right-radius: 4px; }
         .b-them { align-self: flex-start; background: #2c2c2e; border-bottom-left-radius: 4px; }
-        .m-info { font-size: 9px; opacity: 0.6; margin-top: 4px; display: flex; justify-content: flex-end; align-items: center; gap: 3px; }
-        .status-dot { width: 8px; height: 8px; border-radius: 50%; display: inline-block; border: 1.5px solid #fff; }
-        .status-read { background: #fff; } /* Bulat isi 2 = Anggap status read */
+        .m-meta { font-size: 9px; opacity: 0.5; margin-top: 4px; display: flex; justify-content: flex-end; align-items: center; gap: 3px; }
+        .dot { width: 7px; height: 7px; border-radius: 50%; border: 1px solid #fff; }
+        .read { background: #fff; border: none; }
 
-        /* TRANSITION LAYERS */
-        .trans-layer { position: fixed; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center; background: #000; color: #fff; font-size: 32px; font-weight: 800; animation: fade 0.5s; }
-        @keyframes fade { from { opacity: 0; } to { opacity: 1; } }
+        /* NAVIGATION & FAB */
+        .nav-b { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: center; z-index: 2000; }
+        nav { width: 90%; background: rgba(20,20,20,0.9); backdrop-filter: var(--blur); border-radius: 35px; padding: 15px; display: flex; justify-content: space-around; border: 1px solid rgba(255,255,255,0.1); }
+        #fab-add { position: absolute; right: 25px; bottom: 120px; width: 60px; height: 60px; background: var(--p); border-radius: 20px; display: none; align-items: center; justify-content: center; font-size: 30px; z-index: 1000; cursor: pointer; box-shadow: 0 10px 20px rgba(0,0,0,0.5); }
 
-        /* CALL UI */
-        #call-ui { position: fixed; inset: 0; background: #000; z-index: 9000; display: none; flex-direction: column; align-items: center; justify-content: space-around; padding: 100px 0; }
-        
-        /* FOOTER NAV */
-        .nav-b { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: center; }
-        nav { width: 90%; background: rgba(255,255,255,0.1); backdrop-filter: var(--blur); border-radius: 30px; padding: 15px; display: flex; justify-content: space-around; border: 1px solid rgba(255,255,255,0.1); }
+        /* CALL & TRANSITION */
+        #call-ui { position: fixed; inset: 0; background: #000; z-index: 9999; display: none; flex-direction: column; align-items: center; justify-content: space-around; padding: 80px 0; }
+        .trans { position: fixed; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center; font-size: 35px; font-weight: 900; pointer-events: none; }
     </style>
 </head>
 <body>
 
-    <div id="trans-linkup" class="trans-layer" style="background:#fff; color:#000;">LinkUp</div>
-    <div id="trans-conecta" class="trans-layer">Conecta</div>
+    <div id="t-l" class="trans" style="background:#fff; color:#000;">LinkUp</div>
+    <div id="t-c" class="trans">Conecta</div>
 
     <div class="shell">
         <header>
-            <h1 id="h-t">LinkUp</h1>
-            <div style="display:flex; gap:18px; align-items:center;">
-                <span onclick="startScanner()" style="font-size:24px;">📷</span>
-                <div id="my-av" onclick="openProfile()" class="av" style="width:40px; height:40px; cursor:pointer;"></div>
+            <h1 id="h-title">Chats</h1>
+            <div style="display:flex; gap:20px; align-items:center;">
+                <span onclick="startScan()" style="font-size:26px; cursor:pointer;">📷</span>
+                <div id="my-av" onclick="openProf()" class="av" style="width:42px; height:42px; cursor:pointer;"></div>
             </div>
         </header>
 
+        <div class="story-bar">
+            <div onclick="postStory()" style="flex-shrink:0; text-align:center;">
+                <div class="s-ring" style="border-style:dashed; border-color:#444;"><div class="av" style="width:100%;height:100%;border:none;">➕</div></div>
+                <span style="font-size:10px; opacity:0.5;">Cerita</span>
+            </div>
+            <div id="story-list" style="display:flex; gap:15px;"></div>
+        </div>
+
         <div class="main">
             <div id="p-chats" class="page"><div id="chat-l"></div></div>
-            <div id="p-contacts" class="page" style="display:none;"><div id="cont-l"></div></div>
+            <div id="p-cont" class="page" style="display:none;"><div id="cont-l"></div></div>
         </div>
+
+        <div id="fab-add" onclick="addManual()">＋</div>
 
         <div class="nav-b">
             <nav>
-                <div onclick="nav('chats')">💬</div>
-                <div onclick="nav('contacts')">👥</div>
+                <div onclick="nav('chats','Chats',this)" style="opacity:1; cursor:pointer;">💬</div>
+                <div onclick="nav('cont','Kontak',this)" style="opacity:0.3; cursor:pointer;">👥</div>
             </nav>
         </div>
 
-        <div id="v-chat" class="view" style="position:fixed; inset:0; background:#000; z-index:2000; transform:translateX(100%); transition:0.4s; display:flex; flex-direction:column;">
+        <div id="v-chat" class="view">
             <header style="padding-top:50px;">
-                <b onclick="closeChat()">❮</b>
-                <div style="flex:1; display:flex; align-items:center; gap:10px; margin-left:10px;">
-                    <div id="c-av" class="av" style="width:38px; height:38px;"></div>
-                    <div onclick="showContactMenu()"><h4 id="c-n"></h4><small id="c-st" style="color:var(--g)">online</small></div>
+                <b onclick="closeChat()" style="cursor:pointer; padding:5px;">❮</b>
+                <div style="flex:1; display:flex; align-items:center; gap:12px; margin-left:10px;">
+                    <div id="c-av" class="av" style="width:40px; height:40px;"></div>
+                    <div onclick="manageContact()" style="cursor:pointer;"><h4 id="c-n"></h4><small style="color:var(--g)">online</small></div>
                 </div>
-                <span onclick="callFlow()" style="font-size:24px;">📞</span>
+                <span onclick="callFlow()" style="font-size:26px; cursor:pointer;">📞</span>
             </header>
-            <div id="m-area" style="flex:1; overflow-y:auto; padding:20px; display:flex; flex-direction:column; gap:5px; background:rgba(255,255,255,0.02);"></div>
-            <div style="padding:15px 20px 40px; display:flex; gap:10px; align-items:center; background:#000;">
+            <div id="m-area" class="m-area"></div>
+            <div style="padding:15px 20px 40px; display:flex; gap:12px; background:#000; border-top:1px solid #111;">
                 <input id="m-in" type="text" placeholder="Pesan..." style="flex:1; background:#1c1c1e; border:none; padding:15px; border-radius:25px; outline:none;">
-                <button onclick="sendMsg()" style="background:var(--p); width:50px; height:50px; border-radius:50%; border:none;">➤</button>
+                <button onclick="sendMsg()" style="background:var(--p); width:50px; height:50px; border-radius:50%; border:none; cursor:pointer;">➤</button>
             </div>
+        </div>
+
+        <div id="v-prof" class="view up">
+            <header>
+                <b onclick="closeProf()" style="cursor:pointer; color:var(--p);">Selesai</b>
+                <h3>Profil Saya</h3>
+                <span></span>
+            </header>
+            <div style="padding:25px; text-align:center;">
+                <div id="p-av-box" class="av" style="width:100px; height:100px; margin:0 auto 15px; font-size:40px;"></div>
+                <h2 id="p-id-txt" style="color:var(--p); margin-bottom:15px; font-family:monospace;"></h2>
+                <input id="p-name-in" type="text" style="background:none; border:none; border-bottom:1px solid #333; width:80%; text-align:center; font-size:22px; margin-bottom:20px; outline:none;">
+                <div id="qr-profile" style="background:#fff; padding:15px; border-radius:20px; display:inline-block; margin-bottom:25px;"></div>
+                <div id="av-grid" style="display:grid; grid-template-columns:repeat(5,1fr); gap:10px;"></div>
+            </div>
+        </div>
+
+        <div id="v-scan" class="view">
+            <header><b onclick="stopScan()" style="cursor:pointer; color:var(--r);">Batal</b><h3>Scan QR</h3><span></span></header>
+            <div id="reader" style="width:100%; height:65%;"></div>
         </div>
 
         <div id="call-ui">
             <div style="text-align:center">
-                <div id="call-av" class="av" style="width:120px; height:120px; margin:0 auto 20px;"></div>
-                <h2 id="call-name">Zidan</h2>
-                <p>Calling via Conecta...</p>
+                <div id="call-av-box" class="av" style="width:130px; height:130px; margin:0 auto 25px; font-size:50px;"></div>
+                <h2 id="call-name-txt">Zidan</h2>
+                <p style="color:var(--g); margin-top:10px;">Conecta Voice...</p>
             </div>
-            <button onclick="endCallFlow()" style="background:var(--r); width:75px; height:75px; border-radius:50%; border:none; font-size:30px;">🏁</button>
+            <button onclick="endCallFlow()" style="background:var(--r); width:80px; height:80px; border-radius:50%; border:none; font-size:35px; cursor:pointer;">🏁</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, remove, update, onChildAdded } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const conf = { apiKey: "AIzaSyBoS3INezO0UQptcXYNZFbnPbmmf_hU8xc", databaseURL: "https://xbook-global26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "xbook-global26" };
         const app = initializeApp(conf); const db = getDatabase(app);
 
-        let myId = localStorage.getItem('lu_id_v20') || ("LNK-"+Math.floor(1000+Math.random()*9000));
-        localStorage.setItem('lu_id_v20', myId);
-        let myName = localStorage.getItem('lu_n20') || "User " + myId;
-        let myAv = localStorage.getItem('lu_a20') || "👤";
-        let curT = null;
-
-        // Permintaan Izin Mic & Notif
-        window.onload = () => {
-            if ("Notification" in window) Notification.requestPermission();
-            navigator.mediaDevices.getUserMedia({ audio: true }).catch(() => console.log("Mic denied"));
-        };
+        let myId = localStorage.getItem('lu_v22_id') || ("LNK-"+Math.floor(1000+Math.random()*9000));
+        localStorage.setItem('lu_v22_id', myId);
+        let myName = localStorage.getItem('lu_v22_n') || "User " + myId;
+        let myAv = localStorage.getItem('lu_v22_a') || "👤";
+        let curT = null; let h5Qr = null;
 
         function sync() {
-            set(ref(db, `users/${myId}`), { id: myId, name: myName, avatar: myAv, lastSeen: Date.now() });
-            const el = document.getElementById('my-av');
-            if(myAv.startsWith('http')) el.innerHTML = `<img src="${myAv}">`; else el.innerHTML = myAv;
+            set(ref(db, `users/${myId}`), { id: myId, name: myName, avatar: myAv });
+            document.getElementById('my-av').innerHTML = document.getElementById('p-av-box').innerHTML = myAv.startsWith('http') ? `<img src="${myAv}">` : myAv;
+            document.getElementById('p-id-txt').innerText = myId;
+            document.getElementById('p-name-in').value = myName;
+            document.getElementById('qr-profile').innerHTML = "";
+            new QRCode(document.getElementById('qr-profile'), { text: myId, width: 140, height: 140 });
+
+            const grid = document.getElementById('av-grid'); grid.innerHTML = "";
+            ['👑','🔥','💀','🦊','https://api.dicebear.com/7.x/avataaars/svg?seed=Zidan'].forEach(o => {
+                const d = document.createElement('div'); d.className = 'av'; d.style.width='45px'; d.style.height='45px'; d.style.cursor='pointer';
+                d.innerHTML = o.startsWith('http') ? `<img src="${o}">` : o;
+                d.onclick = () => { myAv = o; localStorage.setItem('lu_v22_a', o); sync(); };
+                grid.appendChild(d);
+            });
         }
         sync();
 
-        // CHAT ENGINE DENGAN JAM & STATUS BULAT
+        // CHAT ENGINE
         window.openChat = (u) => {
-            curT = u;
-            document.getElementById('v-chat').style.transform = 'translateX(0)';
+            curT = u; document.getElementById('v-chat').classList.add('open');
             document.getElementById('c-n').innerText = u.name;
-            const chatID = [myId, u.id].sort().join('_');
-            
-            onValue(ref(db, 'messages/' + chatID), (snap) => {
+            document.getElementById('c-av').innerHTML = u.avatar.startsWith('http') ? `<img src="${u.avatar}">` : u.avatar;
+            onValue(ref(db, 'chats/' + [myId, u.id].sort().join('_')), (snap) => {
                 const area = document.getElementById('m-area'); area.innerHTML = "";
                 snap.forEach(m => {
                     const d = m.val();
-                    const time = new Date(d.time).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-                    // Logika Bulat: 1 bulat = Terkirim, 2 bulat (berwarna) = Dibaca
-                    const statusHtml = d.sender === myId ? `<div class="status-dot"></div><div class="status-dot ${d.read?'status-read':''}"></div>` : '';
-                    
-                    const div = document.createElement('div');
-                    div.className = `bubble ${d.sender === myId ? 'b-me' : 'b-them'}`;
-                    div.innerHTML = `${d.text} <div class="m-info">${time} ${statusHtml}</div>`;
+                    const div = document.createElement('div'); div.className = `bubble ${d.s === myId ? 'b-me' : 'b-them'}`;
+                    const dots = d.s === myId ? `<div class="dot"></div><div class="dot ${d.r?'read':''}"></div>` : '';
+                    div.innerHTML = `${d.m} <div class="m-meta">${new Date(d.t).toLocaleTimeString([],{hour:'2-digit',minute:'2-digit'})} ${dots}</div>`;
                     area.appendChild(div);
-                    if(d.sender !== myId && !d.read) update(ref(db, `messages/${chatID}/${m.key}`), { read: true });
+                    if(d.s !== myId && !d.r) update(ref(db, `chats/${[myId, u.id].sort().join('_')}/${m.key}`), { r: true });
                 });
                 area.scrollTop = area.scrollHeight;
             });
         };
 
         window.sendMsg = () => {
-            const txt = document.getElementById('m-in').value;
-            if(!txt || !curT) return;
-            const chatID = [myId, curT.id].sort().join('_');
-            push(ref(db, 'messages/' + chatID), { sender: myId, text: txt, time: Date.now(), read: false });
-            document.getElementById('m-in').value = "";
+            const v = document.getElementById('m-in').value;
+            if(v && curT) {
+                push(ref(db, 'chats/' + [myId, curT.id].sort().join('_')), { s:myId, m:v, t:Date.now(), r:false });
+                document.getElementById('m-in').value = "";
+            }
         };
 
-        // FLOW TRANSISI TELPON
-        window.callFlow = () => {
-            const linkup = document.getElementById('trans-linkup');
-            linkup.style.display = 'flex';
-            setTimeout(() => {
-                linkup.style.display = 'none';
-                document.getElementById('call-ui').style.display = 'flex';
-                document.getElementById('call-name').innerText = curT.name;
-            }, 1000);
+        // SCANNER & ADD CONTACT
+        window.startScan = () => {
+            document.getElementById('v-scan').classList.add('open');
+            h5Qr = new Html5Qrcode("reader");
+            h5Qr.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
+                set(ref(db, `users/${myId}/friends/${txt}`), { id: txt });
+                stopScan();
+            }).catch(() => alert("Kamera Error"));
         };
+        window.stopScan = () => { if(h5Qr) h5Qr.stop(); document.getElementById('v-scan').classList.remove('open'); };
+        window.addManual = () => { const id = prompt("Masukkan ID LinkUp teman:"); if(id) set(ref(db, `users/${myId}/friends/${id}`), { id: id }); };
 
-        window.endCallFlow = () => {
-            document.getElementById('call-ui').style.display = 'none';
-            const conecta = document.getElementById('trans-conecta');
-            conecta.style.display = 'flex';
-            setTimeout(() => { conecta.style.display = 'none'; }, 1000);
-        };
-
-        // MANAJEMEN KONTAK
-        window.showContactMenu = () => {
-            const act = prompt("Ketik: 'hapus' untuk hapus kontak, 'blokir' untuk blokir, 'bersih' untuk hapus chat");
-            const chatID = [myId, curT.id].sort().join('_');
-            if(act === 'hapus') { remove(ref(db, `users/${myId}/friends/${curT.id}`)); window.closeChat(); }
-            if(act === 'bersih') { remove(ref(db, 'messages/' + chatID)); }
-            if(act === 'blokir') { set(ref(db, `users/${myId}/blocked/${curT.id}`), true); window.closeChat(); }
-        };
-
-        // REALTIME FRIENDS
+        // REALTIME LISTS
         onValue(ref(db, `users/${myId}/friends`), (snap) => {
-            const list = document.getElementById('chat-l'); list.innerHTML = "";
+            const ch = document.getElementById('chat-l'), co = document.getElementById('cont-l');
+            ch.innerHTML = co.innerHTML = "";
             snap.forEach(f => {
                 onValue(ref(db, `users/${f.val().id}`), (u) => {
                     const d = u.val(); if(!d) return;
-                    const div = document.createElement('div'); div.className = 'card';
-                    div.innerHTML = `<div class="av">${d.avatar.startsWith('http')?`<img src="${d.avatar}">`:d.avatar}</div><div><b>${d.name}</b><br><small>LinkUp: ${d.id}</small></div>`;
-                    div.onclick = () => openChat(d);
-                    list.appendChild(div);
+                    const card = document.createElement('div'); card.className = 'card';
+                    card.innerHTML = `<div class="av">${d.avatar.startsWith('http')?`<img src="${d.avatar}">`:d.avatar}</div><div><b>${d.name}</b><br><small>${d.id}</small></div>`;
+                    card.onclick = () => openChat(d);
+                    ch.appendChild(card);
+                    const card2 = card.cloneNode(true); card2.onclick = () => openChat(d);
+                    co.appendChild(card2);
                 });
             });
         });
 
-        window.nav = (p) => {
-            document.querySelectorAll('.page').forEach(x => x.style.display = 'none');
-            document.getElementById('p-'+p).style.display = 'block';
+        // TRANSITIONS & UI
+        window.callFlow = () => {
+            document.getElementById('t-l').style.display = 'flex';
+            setTimeout(() => {
+                document.getElementById('t-l').style.display = 'none';
+                document.getElementById('call-ui').style.display = 'flex';
+                document.getElementById('call-name-txt').innerText = curT.name;
+                document.getElementById('call-av-box').innerHTML = curT.avatar.startsWith('http') ? `<img src="${curT.avatar}">` : curT.avatar;
+            }, 800);
+        };
+        window.endCallFlow = () => {
+            document.getElementById('call-ui').style.display = 'none';
+            document.getElementById('t-c').style.display = 'flex';
+            setTimeout(() => document.getElementById('t-c').style.display = 'none', 800);
         };
 
-        window.closeChat = () => document.getElementById('v-chat').style.transform = 'translateX(100%)';
-        window.startScanner = () => {
-            const sc = new Html5Qrcode("reader"); // (Scanner logic sama seperti sebelumnya)
-            alert("Scanner Aktif");
+        window.closeChat = () => document.getElementById('v-chat').classList.remove('open');
+        window.openProf = () => document.getElementById('v-prof').classList.add('open');
+        window.closeProf = () => { myName = document.getElementById('p-name-in').value; localStorage.setItem('lu_v22_n', myName); sync(); document.getElementById('v-prof').classList.remove('open'); };
+        window.nav = (p, t, el) => {
+            document.querySelectorAll('.page').forEach(x => x.style.display = 'none');
+            document.getElementById('p-'+p).style.display = 'block';
+            document.getElementById('h-title').innerText = t;
+            document.querySelectorAll('nav div').forEach(x => x.style.opacity = '0.3');
+            el.style.opacity = '1';
+            document.getElementById('fab-add').style.display = (p === 'cont' ? 'flex' : 'none');
         };
+        window.postStory = () => { const t = prompt("Apa cerita hari ini?"); if(t) set(ref(db, `stories/${myId}`), { id:myId, name:myName, avatar:myAv, txt:t }); };
+        window.manageContact = () => { if(confirm("Hapus kontak ini?")) remove(ref(db, `users/${myId}/friends/${curT.id}`)); };
     </script>
 </body>
 </html>
