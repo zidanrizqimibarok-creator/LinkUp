@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>LinkUp v24 | Absolute Engine</title>
+    <title>LinkUp v26 | Omni-Connect</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
     <script src="https://unpkg.com/html5-qrcode"></script>
     <style>
@@ -11,55 +11,48 @@
         * { margin: 0; padding: 0; box-sizing: border-box; font-family: -apple-system, sans-serif; color: #fff; -webkit-tap-highlight-color: transparent; }
         body { background: #000; height: 100dvh; overflow: hidden; display: flex; justify-content: center; }
         
-        /* BOOTING */
-        #boot { position: fixed; inset: 0; background: #fff; z-index: 100000; display: flex; align-items: center; justify-content: center; transition: 0.8s cubic-bezier(0.7, 0, 0.3, 1); }
+        #boot { position: fixed; inset: 0; background: #fff; z-index: 100000; display: flex; align-items: center; justify-content: center; transition: 0.8s ease; }
         #boot h1 { color: #000; font-size: 40px; font-weight: 900; letter-spacing: -2px; }
 
         .shell { width: 100%; max-width: 430px; height: 100%; position: relative; display: flex; flex-direction: column; background: #000; }
         header { padding: 55px 25px 15px; background: rgba(0,0,0,0.8); backdrop-filter: var(--blur); display: flex; justify-content: space-between; align-items: center; z-index: 1000; border-bottom: 0.5px solid #222; }
         
-        /* LISTS */
         .main { flex: 1; overflow-y: auto; padding: 10px 20px 150px; }
-        .card { background: var(--glass); border-radius: 22px; padding: 18px; display: flex; align-items: center; gap: 15px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); }
+        .card { background: var(--glass); border-radius: 22px; padding: 18px; display: flex; align-items: center; gap: 15px; margin-bottom: 12px; border: 1px solid rgba(255,255,255,0.05); cursor: pointer; animation: fadeIn 0.3s ease; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
+        
         .av { width: 55px; height: 55px; border-radius: 50%; border: 2.5px solid var(--p); background: #111; display: flex; align-items: center; justify-content: center; overflow: hidden; flex-shrink: 0; }
         .av img { width: 100%; height: 100%; object-fit: cover; }
-        .del-btn { color: var(--r); font-size: 20px; padding: 10px; cursor: pointer; }
+        .del-btn { color: var(--r); font-size: 20px; padding: 10px; margin-left: auto; }
 
-        /* VIEWS */
         .view { position: fixed; inset: 0; background: #000; z-index: 5000; transform: translateX(100%); transition: 0.35s ease; display: flex; flex-direction: column; }
         .view.open { transform: translateX(0); }
         .view.up { transform: translateY(100%); transition: 0.45s; }
         .view.up.open { transform: translateY(0); }
 
-        /* CHAT ENGINE */
-        .m-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; background: radial-gradient(circle at center, #111, #000); }
+        .m-area { flex: 1; overflow-y: auto; padding: 20px; display: flex; flex-direction: column; gap: 10px; }
         .bubble { padding: 12px 16px; border-radius: 20px; max-width: 75%; font-size: 15px; line-height: 1.4; }
         .b-me { align-self: flex-end; background: var(--p); border-bottom-right-radius: 4px; }
         .b-them { align-self: flex-start; background: #2c2c2e; border-bottom-left-radius: 4px; }
+        
         .m-meta { font-size: 9px; opacity: 0.5; margin-top: 5px; display: flex; justify-content: flex-end; gap: 4px; align-items: center; }
         .st-dot { width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid #fff; }
         .st-read { background: #fff; }
 
-        /* AVATAR GRID 5 */
         .av-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 10px; margin-top: 20px; }
         .av-opt { width: 100%; aspect-ratio: 1; border-radius: 50%; border: 2px solid #333; overflow: hidden; cursor: pointer; }
         .av-opt.active { border-color: var(--p); }
 
-        /* NAV */
         .nav-b { position: absolute; bottom: 30px; width: 100%; display: flex; justify-content: center; z-index: 2000; }
         nav { width: 92%; background: rgba(20,20,20,0.9); backdrop-filter: var(--blur); border-radius: 35px; padding: 18px; display: flex; justify-content: space-around; border: 1px solid rgba(255,255,255,0.1); }
         
-        /* SCANNER CAMERA */
-        #cam-box { width: 100%; height: 60vh; background: #111; position: relative; overflow: hidden; }
-        
-        .trans { position: fixed; inset: 0; z-index: 10000; display: none; align-items: center; justify-content: center; font-size: 35px; font-weight: 900; pointer-events: none; }
+        #cam-box { width: 100%; height: 60vh; background: #111; }
     </style>
 </head>
 <body>
 
     <div id="boot"><h1>LinkUp</h1></div>
-    <div id="t-l" class="trans" style="background:#fff; color:#000;">LinkUp</div>
-    <div id="t-c" class="trans">Conecta</div>
+    <div id="t-l" class="view" style="background:#fff; z-index:10000; align-items:center; justify-content:center; display:none;"><h1 style="color:#000">LinkUp</h1></div>
 
     <div class="shell">
         <header>
@@ -71,38 +64,36 @@
         </header>
 
         <div class="main">
-            <div id="p-chats" class="page"><div id="chat-l"></div></div>
-            <div id="p-cont" class="page" style="display:none;"><div id="cont-l"></div></div>
+            <div id="chat-list-area"></div>
         </div>
 
         <div class="nav-b">
             <nav>
-                <div onclick="nav('chats','Chats',this)" style="opacity:1">💬</div>
-                <div onclick="nav('cont','Kontak',this)" style="opacity:0.3">👥</div>
-                <div onclick="addManual()">➕</div>
+                <div onclick="showPage('chats')" style="cursor:pointer;">💬</div>
+                <div onclick="addManual()" style="cursor:pointer;">➕</div>
             </nav>
         </div>
 
         <div id="v-chat" class="view">
             <header style="padding-top:50px;">
-                <b onclick="closeChat()">❮</b>
+                <b onclick="closeChat()" style="cursor:pointer;">❮</b>
                 <div style="flex:1; display:flex; align-items:center; gap:12px; margin-left:10px;">
                     <div id="c-av" class="av" style="width:40px; height:40px;"></div>
                     <h4 id="c-n">Nama</h4>
                 </div>
-                <span onclick="callFlow()" style="font-size:26px;">📞</span>
             </header>
             <div id="m-area" class="m-area"></div>
             <div style="padding:15px 20px 40px; display:flex; gap:12px; background:#000;">
                 <input id="m-in" type="text" placeholder="Pesan..." style="flex:1; background:#1c1c1e; border:none; padding:15px; border-radius:25px; outline:none;">
-                <button onclick="sendMsg()" style="background:var(--p); width:50px; height:50px; border-radius:50%; border:none;">➤</button>
+                <button onclick="sendMsg()" style="background:var(--p); width:50px; height:50px; border-radius:50%; border:none; cursor:pointer;">➤</button>
             </div>
         </div>
 
         <div id="v-prof" class="view up">
-            <header><b onclick="closeProf()" style="color:var(--p);">Selesai</b><h3>Profil</h3><span></span></header>
+            <header><b onclick="closeProf()" style="color:var(--p); cursor:pointer;">Selesai</b><h3>Profil</h3><span></span></header>
             <div style="padding:25px; text-align:center;">
                 <div id="p-av-box" class="av" style="width:110px; height:110px; margin:0 auto 20px;"></div>
+                <h2 id="p-id-display" style="color:var(--p); margin-bottom:10px; font-family:monospace;"></h2>
                 <input id="p-name-in" type="text" style="background:none; border:none; border-bottom:1px solid #333; width:80%; text-align:center; font-size:24px; margin-bottom:20px; outline:none;">
                 <div id="qr-profile" style="background:#fff; padding:12px; border-radius:20px; display:inline-block;"></div>
                 <div class="av-grid" id="avatar-choices"></div>
@@ -110,76 +101,72 @@
         </div>
 
         <div id="v-scan" class="view">
-            <header><b onclick="closeScanner()" style="color:var(--r);">Batal</b><h3>Scan QR</h3><span></span></header>
+            <header><b onclick="closeScanner()" style="color:var(--r); cursor:pointer;">Batal</b><h3>Scan QR</h3><span></span></header>
             <div id="cam-box"></div>
-            <p style="padding:20px; text-align:center; opacity:0.5;">Arahkan ke QR Code teman untuk menambah kontak.</p>
-        </div>
-
-        <div id="call-ui" style="position:fixed; inset:0; background:#000; z-index:9999; display:none; flex-direction:column; align-items:center; justify-content:space-around;">
-            <div style="text-align:center">
-                <div id="call-av" class="av" style="width:140px; height:140px; margin:0 auto 20px;"></div>
-                <h2 id="call-name">Zidan</h2>
-                <p style="color:var(--g)">Conecta Calling...</p>
-            </div>
-            <button onclick="endCall()" style="background:var(--r); width:80px; height:80px; border-radius:50%; border:none; font-size:35px;">🏁</button>
         </div>
     </div>
 
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-        import { getDatabase, ref, set, push, onValue, remove, update } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
+        import { getDatabase, ref, set, push, onValue, update, query, orderByKey } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-database.js";
 
         const conf = { apiKey: "AIzaSyBoS3INezO0UQptcXYNZFbnPbmmf_hU8xc", databaseURL: "https://xbook-global26-default-rtdb.asia-southeast1.firebasedatabase.app", projectId: "xbook-global26" };
         const app = initializeApp(conf); const db = getDatabase(app);
 
-        let myId = localStorage.getItem('lu_v24_id') || ("LNK-"+Math.floor(1000+Math.random()*9000));
-        localStorage.setItem('lu_v24_id', myId);
-        let myName = localStorage.getItem('lu_v24_n') || "User " + myId;
-        let myAv = localStorage.getItem('lu_v24_a') || "https://api.dicebear.com/7.x/avataaars/svg?seed=Zidan";
+        let myId = localStorage.getItem('lu_v26_id') || ("LNK-"+Math.floor(1000+Math.random()*9000));
+        localStorage.setItem('lu_v26_id', myId);
+        let myName = localStorage.getItem('lu_v26_n') || "User " + myId;
+        let myAv = localStorage.getItem('lu_v26_a') || "https://api.dicebear.com/7.x/avataaars/svg?seed=Zidan";
         let curT = null; let scanner = null;
 
-        setTimeout(() => document.getElementById('boot').style.transform = 'translateY(-100%)', 1500);
+        setTimeout(() => document.getElementById('boot').style.display = 'none', 1500);
 
         function sync() {
             set(ref(db, `users/${myId}`), { id: myId, name: myName, avatar: myAv });
             document.getElementById('my-av').innerHTML = document.getElementById('p-av-box').innerHTML = `<img src="${myAv}">`;
             document.getElementById('p-name-in').value = myName;
+            document.getElementById('p-id-display').innerText = myId;
             document.getElementById('qr-profile').innerHTML = "";
             new QRCode(document.getElementById('qr-profile'), { text: myId, width: 140, height: 140 });
 
-            // 5 Pilihan Foto Profil
-            const choices = ['Zidan','Asep','Rendi','Berliana','Rifqi'];
+            const choices = ['Zidan','Speed','Skull','Tech','Gamer'];
             const grid = document.getElementById('avatar-choices'); grid.innerHTML = "";
             choices.forEach(c => {
                 const url = `https://api.dicebear.com/7.x/avataaars/svg?seed=${c}`;
                 const div = document.createElement('div'); div.className = `av-opt ${myAv === url ? 'active' : ''}`;
                 div.innerHTML = `<img src="${url}">`;
-                div.onclick = () => { myAv = url; localStorage.setItem('lu_v24_a', url); sync(); };
+                div.onclick = () => { myAv = url; localStorage.setItem('lu_v26_a', url); sync(); };
                 grid.appendChild(div);
             });
         }
         sync();
 
-        // CHAT & LISTS
-        onValue(ref(db, `users/${myId}/friends`), (snap) => {
-            const ch = document.getElementById('chat-l'), co = document.getElementById('cont-l');
-            ch.innerHTML = co.innerHTML = "";
-            snap.forEach(f => {
-                onValue(ref(db, `users/${f.key}`), (u) => {
-                    const d = u.val(); if(!d) return;
-                    if(document.getElementById('c-'+d.id)) return; // No Double
+        // OMNI-INBOX: Mendeteksi chat otomatis tanpa perlu berteman
+        onValue(ref(db, 'msgs'), (snap) => {
+            const listArea = document.getElementById('chat-list_area') || document.getElementById('chat-list-area');
+            listArea.innerHTML = "";
+            const chats = snap.val() || {};
+            
+            Object.keys(chats).forEach(chatKey => {
+                if (chatKey.includes(myId)) {
+                    const parts = chatKey.split('_');
+                    const otherId = parts[0] === myId ? parts[1] : parts[0];
+                    
+                    // Ambil data user lain secara real-time
+                    onValue(ref(db, `users/${otherId}`), (uSnap) => {
+                        const ud = uSnap.val();
+                        if(!ud) return;
+                        
+                        const oldCard = document.getElementById('card-'+otherId);
+                        if(oldCard) oldCard.remove();
 
-                    const card = document.createElement('div'); card.className = 'card'; card.id = 'c-'+d.id;
-                    card.innerHTML = `<div class="av"><img src="${d.avatar}"></div><div style="flex:1"><b>${d.name}</b><br><small>${d.id}</small></div>`;
-                    card.onclick = () => openChat(d);
-                    ch.appendChild(card);
-
-                    const card2 = card.cloneNode(true); card2.onclick = () => openChat(d);
-                    const del = document.createElement('div'); del.className = 'del-btn'; del.innerHTML = '🗑️';
-                    del.onclick = (e) => { e.stopPropagation(); if(confirm('Hapus kontak?')) remove(ref(db, `users/${myId}/friends/${d.id}`)); };
-                    card2.appendChild(del);
-                    co.appendChild(card2);
-                });
+                        const card = document.createElement('div');
+                        card.className = 'card'; card.id = 'card-'+otherId;
+                        card.innerHTML = `<div class="av"><img src="${ud.avatar}"></div><div style="flex:1"><b>${ud.name}</b><br><small>${ud.id}</small></div>`;
+                        card.onclick = () => openChat(ud);
+                        listArea.prepend(card); // Pesan terbaru di atas
+                    });
+                }
             });
         });
 
@@ -187,6 +174,7 @@
             curT = u; document.getElementById('v-chat').classList.add('open');
             document.getElementById('c-n').innerText = u.name;
             document.getElementById('c-av').innerHTML = `<img src="${u.avatar}">`;
+            
             const chatID = [myId, u.id].sort().join('_');
             onValue(ref(db, 'msgs/' + chatID), (snap) => {
                 const area = document.getElementById('m-area'); area.innerHTML = "";
@@ -204,49 +192,35 @@
 
         window.sendMsg = () => {
             const v = document.getElementById('m-in').value; if(!v || !curT) return;
-            push(ref(db, 'msgs/' + [myId, curT.id].sort().join('_')), { s:myId, m:v, t:Date.now(), r:false });
+            const chatID = [myId, curT.id].sort().join('_');
+            push(ref(db, 'msgs/' + chatID), { s:myId, m:v, t:Date.now(), r:false });
             document.getElementById('m-in').value = "";
         };
 
-        // SCANNER REAL
+        window.addManual = () => {
+            const id = prompt("Kirim pesan ke ID:");
+            if(id) {
+                onValue(ref(db, `users/${id}`), (s) => {
+                    if(s.exists()) openChat(s.val());
+                    else alert("ID tidak ditemukan");
+                }, { onlyOnce: true });
+            }
+        };
+
         window.openScanner = () => {
             document.getElementById('v-scan').classList.add('open');
             scanner = new Html5Qrcode("cam-box");
             scanner.start({ facingMode: "environment" }, { fps: 10, qrbox: 250 }, (txt) => {
-                set(ref(db, `users/${myId}/friends/${txt}`), true);
-                closeScanner();
-            }).catch(e => alert("Kamera diblokir atau error."));
+                onValue(ref(db, `users/${txt}`), (s) => {
+                    if(s.exists()) { openChat(s.val()); closeScanner(); }
+                }, { onlyOnce: true });
+            });
         };
+
         window.closeScanner = () => { if(scanner) scanner.stop(); document.getElementById('v-scan').classList.remove('open'); };
-
-        // CALL
-        window.callFlow = () => {
-            document.getElementById('t-l').style.display = 'flex';
-            setTimeout(() => {
-                document.getElementById('t-l').style.display = 'none';
-                document.getElementById('call-ui').style.display = 'flex';
-                document.getElementById('call-name').innerText = curT.name;
-                document.getElementById('call-av').innerHTML = `<img src="${curT.avatar}">`;
-            }, 800);
-        };
-        window.endCall = () => {
-            document.getElementById('call-ui').style.display = 'none';
-            document.getElementById('t-c').style.display = 'flex';
-            setTimeout(() => document.getElementById('t-c').style.display = 'none', 800);
-        };
-
-        // UI
-        window.nav = (p, t, el) => {
-            document.querySelectorAll('.page').forEach(x => x.style.display = 'none');
-            document.getElementById('p-'+p).style.display = 'block';
-            document.getElementById('h-title').innerText = t;
-            document.querySelectorAll('nav div').forEach(x => x.style.opacity = '0.3');
-            el.style.opacity = '1';
-        };
         window.closeChat = () => document.getElementById('v-chat').classList.remove('open');
         window.openProf = () => document.getElementById('v-prof').classList.add('open');
-        window.closeProf = () => { myName = document.getElementById('p-name-in').value; localStorage.setItem('lu_v24_n', myName); sync(); document.getElementById('v-prof').classList.remove('open'); };
-        window.addManual = () => { const id = prompt("ID LinkUp:"); if(id) set(ref(db, `users/${myId}/friends/${id}`), true); };
+        window.closeProf = () => { myName = document.getElementById('p-name-in').value; localStorage.setItem('lu_v26_n', myName); sync(); document.getElementById('v-prof').classList.remove('open'); };
     </script>
 </body>
 </html>
